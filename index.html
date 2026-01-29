@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Randevio — Klinik Randevu & Yönetim (Kaynak Kod Teslim)</title>
+
+  <meta name="description" content="Randevio: PHP tabanlı klinik randevu ve yönetim sistemi. Kaynak kod satın alan kişiye teslim edilir. Demo + Admin erişimi, modüler yapı ve çoklu şube/hekim planlama." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #ffffff;
+      --ink: #0b1224;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --card:#ffffff;
+      --soft:#f8fafc;
+
+      --blue:#2563eb;
+      --indigo:#4f46e5;
+      --cyan:#06b6d4;
+
+      --good:#059669;
+      --danger:#e11d48;
+
+      --shadow: 0 32px 70px -35px rgba(37,99,235,.45);
+      --shadow-dark: 0 50px 120px -70px rgba(2,6,23,.95);
+
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--ink);
+      background:var(--bg);
+      overflow-x:hidden;
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1200px; margin:0 auto; padding:0 22px;}
+
+    /* Top Nav */
+    .nav{
+      position:fixed; left:0; top:0; width:100%;
+      background:rgba(255,255,255,.84);
+      backdrop-filter: blur(16px);
+      border-bottom:1px solid rgba(226,232,240,.85);
+      z-index:50;
+      height:78px;
+      display:flex; align-items:center;
+    }
+    .nav-inner{display:flex; align-items:center; justify-content:space-between; gap:18px;}
+    .brand{display:flex; align-items:center; gap:12px;}
+    .logo{
+      width:42px; height:42px; border-radius:14px;
+      display:grid; place-items:center;
+      background:linear-gradient(90deg,var(--blue),var(--indigo));
+      color:#fff; font-weight:900;
+      box-shadow: var(--shadow);
+    }
+    .brand-name{font-size:20px; font-weight:900; letter-spacing:-.02em;}
+    .brand-name span{color:var(--blue)}
+    .nav-links{display:flex; gap:22px; align-items:center; font-weight:900; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
+    .nav-links a:hover{color:var(--blue)}
+    .nav-cta{display:flex; gap:10px; align-items:center;}
+
+    /* Buttons */
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      padding:14px 18px;
+      border-radius:18px;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      border:1px solid transparent;
+      transition:.2s transform, .2s background, .2s border, .2s color, .2s box-shadow;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn-primary{
+      background:linear-gradient(90deg,var(--blue),var(--indigo));
+      color:#fff;
+      box-shadow: var(--shadow);
+    }
+    .btn-primary:hover{transform:translateY(-1px); filter:saturate(1.08)}
+    .btn-ghost{
+      background:rgba(255,255,255,.66);
+      border-color:rgba(226,232,240,.92);
+      color:var(--muted);
+    }
+    .btn-ghost:hover{border-color:rgba(37,99,235,.35); color:var(--blue); transform:translateY(-1px)}
+    .btn-dark{
+      background:#0b1224;
+      color:#fff;
+      box-shadow: 0 30px 60px -30px rgba(2,6,23,.7);
+    }
+    .btn-dark:hover{transform:translateY(-1px); background:#020617}
+
+    .badge{
+      display:inline-flex; align-items:center; gap:10px;
+      background:linear-gradient(90deg, rgba(37,99,235,.10), rgba(79,70,229,.10));
+      border:1px solid rgba(37,99,235,.20);
+      color:#0b1224; padding:10px 14px; border-radius:999px;
+      font-size:11px; font-weight:900; letter-spacing:.18em; text-transform:uppercase;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--indigo)); box-shadow:0 0 0 6px rgba(37,99,235,.12);}
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 14px; border-radius:999px;
+      font-size:11px; font-weight:900; letter-spacing:.18em; text-transform:uppercase;
+      border:1px solid rgba(226,232,240,.9);
+      background:rgba(255,255,255,.72);
+      color:rgba(11,18,36,.92);
+    }
+
+    /* HERO */
+    .hero{
+      position:relative;
+      padding:140px 0 90px;
+      min-height: 92vh;
+      display:flex; align-items:center;
+      overflow:hidden;
+    }
+    .hero::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(37,99,235,.22), transparent 48%),
+        radial-gradient(circle at 75% 10%, rgba(6,182,212,.14), transparent 40%),
+        radial-gradient(circle at 85% 70%, rgba(79,70,229,.18), transparent 50%),
+        linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.95) 42%, rgba(255,255,255,.40) 72%, rgba(255,255,255,.12) 100%),
+        url("https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=2200") center/cover no-repeat;
+      z-index:-3;
+    }
+    .noise{
+      position:absolute; inset:-30%;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      pointer-events:none;
+      z-index:-2;
+      transform: rotate(-8deg);
+    }
+    .hero-grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:44px; align-items:center;}
+    .hero h1{
+      margin:18px 0 0;
+      font-size: clamp(40px, 5vw, 72px);
+      line-height:1.03;
+      letter-spacing:-.04em;
+      font-weight:900;
+    }
+    .grad{
+      background:linear-gradient(90deg, var(--blue), var(--indigo));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    .lead{
+      margin:18px 0 0;
+      font-size: clamp(16px, 1.25vw, 19px);
+      line-height:1.75;
+      color:#334155;
+      font-weight:700;
+      max-width: 700px;
+    }
+    .hero-actions{margin-top:26px; display:flex; gap:14px; flex-wrap:wrap;}
+    .hero-kpis{
+      margin-top:22px;
+      padding-top:18px;
+      border-top: 1px solid rgba(226,232,240,.75);
+      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+      max-width: 760px;
+    }
+    .kpi{
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(226,232,240,.90);
+      border-radius: 18px;
+      padding:12px 14px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .kpi strong{color:var(--ink); font-weight:900}
+
+    .hero-card{
+      background:rgba(255,255,255,.60);
+      border:1px solid rgba(255,255,255,.70);
+      border-radius: 42px;
+      padding:14px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 60px 120px -55px rgba(37,99,235,.45);
+      transform: rotate(1.1deg);
+      transition: .6s transform;
+      position:relative;
+      animation: floaty 8s ease-in-out infinite;
+    }
+    @keyframes floaty{
+      0%,100%{transform: translateY(0) rotate(1.1deg)}
+      50%{transform: translateY(-8px) rotate(.4deg)}
+    }
+    .hero-card img{
+      width:100%; height:490px; object-fit:cover;
+      border-radius: 36px;
+      display:block;
+      filter: grayscale(.10) contrast(1.05);
+    }
+    .ribbon{
+      position:absolute; left:16px; top:16px;
+      background:rgba(2,6,23,.88);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      padding:10px 12px;
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      backdrop-filter: blur(8px);
+      display:flex; align-items:center; gap:10px;
+    }
+    .ribbon .mini-dot{width:8px;height:8px;border-radius:999px;background:#22c55e; box-shadow:0 0 0 6px rgba(34,197,94,.18);}
+
+    .float-badge{
+      position:absolute;
+      left:-26px; bottom:86px;
+      background:#fff;
+      border:1px solid rgba(226,232,240,.92);
+      border-radius: 28px;
+      padding:16px 18px;
+      box-shadow: 0 40px 80px -40px rgba(2,6,23,.6);
+    }
+    .float-row{display:flex; align-items:center; gap:12px;}
+    .float-ico{
+      width:46px; height:46px; border-radius:18px;
+      display:grid; place-items:center;
+      background:linear-gradient(90deg,var(--blue),var(--indigo));
+      color:#fff; font-size:20px;
+      box-shadow: 0 20px 40px -25px rgba(37,99,235,.9);
+    }
+    .float-badge p{margin:0}
+    .float-badge .mini{font-size:11px; color:var(--muted); font-weight:900; letter-spacing:.18em; text-transform:uppercase}
+    .float-badge .big{font-size:18px; font-weight:900; letter-spacing:-.02em}
+
+    /* Sections */
+    .section{padding:110px 0}
+    .section.soft{background: linear-gradient(#fff, #fff 40%, rgba(248,250,252,.92))}
+    .section-head{text-align:center; max-width:920px; margin:0 auto 48px;}
+    .eyebrow{
+      font-size:11px; font-weight:900; letter-spacing:.35em; text-transform:uppercase;
+      color:var(--blue);
+      margin-bottom:10px;
+    }
+    .h2{margin:0; font-size: clamp(30px, 3vw, 46px); font-weight:900; letter-spacing:-.02em;}
+    .sub{margin:14px auto 0; color:var(--muted); font-weight:700; line-height:1.7; max-width: 780px;}
+
+    .grid3{display:grid; grid-template-columns: repeat(3,1fr); gap:18px;}
+    .grid2{display:grid; grid-template-columns: repeat(2,1fr); gap:18px;}
+
+    .card{
+      background:var(--card);
+      border:1px solid rgba(226,232,240,.86);
+      border-radius: var(--radius-xl);
+      padding:26px;
+      box-shadow: 0 18px 50px -45px rgba(2,6,23,.35);
+      transition: .25s border-color, .25s transform, .25s box-shadow;
+    }
+    .card:hover{
+      border-color: rgba(37,99,235,.25);
+      transform: translateY(-2px);
+      box-shadow: 0 40px 90px -70px rgba(37,99,235,.42);
+    }
+    .icon{
+      width:56px; height:56px; border-radius:20px;
+      display:grid; place-items:center;
+      background:linear-gradient(180deg, rgba(37,99,235,.11), rgba(79,70,229,.08));
+      border:1px solid rgba(37,99,235,.14);
+      font-size:26px;
+      margin-bottom:16px;
+    }
+    .card h4{margin:0; font-size:18px; font-weight:900}
+    .card p{margin:10px 0 0; color:var(--muted); font-weight:700; line-height:1.7}
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: 12px;
+      color:#0b1224;
+      background: rgba(248,250,252,.95);
+      border: 1px solid rgba(226,232,240,.92);
+      border-radius: 16px;
+      padding: 12px 14px;
+      line-height: 1.6;
+      overflow:auto;
+      margin-top: 12px;
+      white-space: pre;
+    }
+
+    /* Pricing */
+    .pricing{display:grid; grid-template-columns: 1.1fr .9fr; gap:18px; align-items:stretch;}
+    .price{
+      border-radius: 34px;
+      border:1px solid rgba(226,232,240,.9);
+      padding:26px;
+      background:#fff;
+      box-shadow: 0 18px 50px -45px rgba(2,6,23,.35);
+      height:100%;
+    }
+    .price.featured{
+      border-color: rgba(37,99,235,.38);
+      box-shadow: 0 60px 140px -85px rgba(37,99,235,.65);
+      position:relative;
+      overflow:hidden;
+    }
+    .price.featured:before{
+      content:"";
+      position:absolute; inset:-30%;
+      background: radial-gradient(circle at 20% 20%, rgba(37,99,235,.22), transparent 52%),
+                  radial-gradient(circle at 80% 60%, rgba(79,70,229,.16), transparent 55%);
+      pointer-events:none;
+    }
+    .price > *{position:relative}
+    .price .name{font-size:11px; font-weight:900; letter-spacing:.35em; text-transform:uppercase; color:var(--muted)}
+    .price .title{font-size:22px; font-weight:900; margin:10px 0 0}
+    .money-row{display:flex; align-items:end; gap:12px; flex-wrap:wrap; margin-top: 12px;}
+    .money{font-size:44px; font-weight:900; letter-spacing:-.03em; margin:0;}
+    .was{font-weight:900; color:rgba(100,116,139,.9); text-decoration: line-through;}
+    .tag{
+      display:inline-flex;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(5,150,105,.12);
+      color: var(--good);
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      border:1px solid rgba(5,150,105,.18);
+    }
+    .tag2{
+      display:inline-flex;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(37,99,235,.10);
+      color: var(--blue);
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      border:1px solid rgba(37,99,235,.18);
+    }
+    .list{margin:16px 0 0; padding:0; list-style:none; display:grid; gap:10px}
+    .list li{display:flex; gap:10px; align-items:flex-start; color:#334155; font-weight:700; line-height:1.5}
+    .tick{width:22px; height:22px; border-radius:8px; display:grid; place-items:center; background:rgba(5,150,105,.12); color:var(--good); font-weight:900}
+    .note{margin-top:14px; font-size:12px; color:var(--muted); font-weight:700; line-height:1.6}
+    .warn{
+      margin-top:12px;
+      font-size:12px;
+      color:#7c2d12;
+      font-weight:800;
+      line-height:1.6;
+      background: rgba(245,158,11,.10);
+      border: 1px solid rgba(245,158,11,.22);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    /* Banner */
+    .banner{
+      background:#0b1224;
+      border-radius: 44px;
+      padding: 50px 22px;
+      color:#fff;
+      position:relative;
+      overflow:hidden;
+      box-shadow: var(--shadow-dark);
+    }
+    .banner::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(37,99,235,.40), transparent 50%),
+        radial-gradient(circle at 85% 60%, rgba(79,70,229,.28), transparent 55%),
+        radial-gradient(circle at 50% 110%, rgba(6,182,212,.22), transparent 55%);
+      opacity:.95;
+      pointer-events:none;
+    }
+    .banner-inner{position:relative; z-index:1; max-width:960px; margin:0 auto; text-align:center;}
+    .banner h3{margin:0; font-size: clamp(26px, 3vw, 46px); font-weight:900; letter-spacing:-.02em; line-height:1.15}
+    .banner p{margin:14px auto 0; color:rgba(226,232,240,.78); font-weight:700; line-height:1.7; max-width: 820px}
+    .banner-actions{margin-top:22px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap}
+
+    /* FAQ */
+    .faq{display:grid; gap:12px; max-width: 960px; margin: 0 auto;}
+    details{
+      border:1px solid rgba(226,232,240,.92);
+      border-radius: 22px;
+      background:#fff;
+      padding: 14px 18px;
+    }
+    summary{
+      cursor:pointer;
+      font-weight:900;
+      color:#0f172a;
+      list-style:none;
+    }
+    summary::-webkit-details-marker{display:none}
+    details p{margin:10px 0 0; color:var(--muted); font-weight:700; line-height:1.7}
+
+    /* Footer */
+    footer{padding:64px 0; border-top:1px solid rgba(226,232,240,.86); background:rgba(248,250,252,.60)}
+    .foot{display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap}
+    .foot small{color:var(--muted); font-weight:700}
+    .foot-links{display:flex; gap:18px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; font-size:11px; color:rgba(100,116,139,.95)}
+    .foot-links a:hover{color:var(--blue)}
+
+    @media (max-width: 980px){
+      .hero-grid{grid-template-columns:1fr; gap:24px;}
+      .hero-card{display:none}
+      .grid3{grid-template-columns:1fr;}
+      .grid2{grid-template-columns:1fr;}
+      .pricing{grid-template-columns:1fr;}
+      .nav-links{display:none}
+      .float-badge{display:none}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="nav">
+    <div class="container">
+      <div class="nav-inner">
+        <div class="brand">
+          <div class="logo">R</div>
+          <div class="brand-name">Rande<span>vio</span></div>
+        </div>
+
+        <div class="nav-links">
+          <a href="#overview">Genel</a>
+          <a href="#demo">Demo</a>
+          <a href="#features">Özellikler</a>
+          <a href="#modules">Modüller</a>
+          <a href="#pricing">Fiyat</a>
+          <a href="#faq">SSS</a>
+        </div>
+
+        <div class="nav-cta">
+          <a class="btn btn-ghost" href="https://t.me/mebularts" target="_blank" rel="noopener">Telegram</a>
+          <a class="btn btn-primary" href="https://wa.me/12513160268" target="_blank" rel="noopener">WhatsApp ✨</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero" id="overview">
+    <div class="noise" aria-hidden="true"></div>
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div class="badge"><span class="dot"></span> Klinik Randevu & Yönetim</div>
+            <div class="pill">📦 Kaynak Kod Teslim</div>
+            <div class="pill">🔧 Kurulum Opsiyonu +600₺</div>
+          </div>
+
+          <h1>
+            Klinik Yönetiminde <br/>
+            <span class="grad">Dijital Düzen.</span>
+          </h1>
+
+          <p class="lead">
+            <strong>Randevio</strong>, PHP tabanlı bir klinik randevu ve yönetim çözümüdür.
+            Şube/hekim bazlı planlama, modern arayüz ve modüler mimari ile randevu süreçlerini netleştirir.
+            <br/><br/>
+            📦 <strong>Satın alım sonrası:</strong> Tam kaynak kod + kurulum dokümantasyonu + örnek yapılandırmalar teslim edilir.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://randevio.mebularts.com.tr/" target="_blank" rel="noopener">Canlı Demo</a>
+            <a class="btn btn-ghost" href="https://randevio.mebularts.com.tr/login.php" target="_blank" rel="noopener">Admin Panel</a>
+            <a class="btn btn-dark" href="#pricing">Fiyat / Paketler</a>
+          </div>
+
+          <div class="hero-kpis">
+            <div class="kpi">⚡ <strong>Hızlı Akış:</strong> şube → hekim → saat → randevu</div>
+            <div class="kpi">🏥 <strong>Çoklu Şube:</strong> şube bazlı iletişim / harita</div>
+            <div class="kpi">🧑‍⚕️ <strong>Hekim Planlama:</strong> branş ve slot mantığı</div>
+            <div class="kpi">🛡️ <strong>Güvenlik:</strong> rol bazlı erişim + CSRF</div>
+          </div>
+        </div>
+
+        <div style="position:relative;">
+          <div class="hero-card">
+            <div class="ribbon"><span class="mini-dot"></span> LIVE DEMO</div>
+            <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=2200" alt="Randevio" />
+          </div>
+
+          <div class="float-badge">
+            <div class="float-row">
+              <div class="float-ico">🧭</div>
+              <div>
+                <p class="mini">Demo / Admin</p>
+                <p class="big">Hemen İncele</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <section class="section soft" id="demo">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Demo Erişimi</div>
+        <h2 class="h2">Canlı Demo + Admin Panel</h2>
+        <p class="sub">
+          Aşağıdaki bağlantılar üzerinden sistemi inceleyebilirsin. Demo ortamı herkese açıktır; lütfen gerçek kişisel veri girmeyin.
+        </p>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">🌐</div>
+          <h4>Demo</h4>
+          <p><strong>Site:</strong> randevio.mebularts.com.tr</p>
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn-primary" href="https://randevio.mebularts.com.tr/" target="_blank" rel="noopener">Demo Aç</a>
+            <a class="btn btn-ghost" href="#features">Özelliklere Bak</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="icon">🔐</div>
+          <h4>Admin</h4>
+          <p><strong>Giriş:</strong> /login.php</p>
+          <div class="mono">Admin: https://randevio.mebularts.com.tr/login.php
+Kullanıcı: admin@admin.com
+Şifre: 123456</div>
+          <p class="note">🧪 Demo kullanıcıları için. Üretimde mutlaka şifre değiştirin ve rol/yetki ayarlayın.</p>
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn-primary" href="https://randevio.mebularts.com.tr/login.php" target="_blank" rel="noopener">Admin Aç</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="icon">💬</div>
+          <h4>İletişim</h4>
+          <p>Kurulum / özelleştirme / teklif için hızlı dönüş.</p>
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn-primary" href="https://wa.me/12513160268" target="_blank" rel="noopener">WhatsApp</a>
+            <a class="btn btn-ghost" href="https://t.me/mebularts" target="_blank" rel="noopener">Telegram</a>
+          </div>
+          <p class="note">İstersen  sadece bu tanıtım sayfasını yayınlayabilirsin.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Öne Çıkanlar</div>
+        <h2 class="h2">Klinik Süreçlerini Tek Panelde Topla.</h2>
+        <p class="sub">
+          Randevio; randevu altyapısını, şube/hekim yönetimini ve içerik yönetimini bir araya getirir.
+          Modüler yapı sayesinde sadece ihtiyacın olan parçaları açıp kullanabilirsin.
+        </p>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">📅</div>
+          <h4>Online Randevu Akışı</h4>
+          <p>Şube/hekim seçimi, uygun saat listesi, hızlı randevu oluşturma. İsteğe bağlı bildirim akışı genişletilebilir.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🏢</div>
+          <h4>Çoklu Şube Yönetimi</h4>
+          <p>Şube bazlı adres/harita, iletişim, çalışma düzeni ve şube verilerinin tek merkezden yönetimi.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🧑‍⚕️</div>
+          <h4>Hekim & Branş Planlama</h4>
+          <p>Branş/hekim bazlı slot mantığına uygun planlama. İhtiyaca göre kapasite & takvim genişletilebilir.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🧩</div>
+          <h4>CMS İçerik Yönetimi</h4>
+          <p>Anasayfa bölümleri (Hero, Hakkımızda, Hizmetler, SSS vb.) panelden yönetilecek şekilde kurgulanabilir.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🌍</div>
+          <h4>Çoklu Dil (i18n)</h4>
+          <p>TR/EN/DE/AR gibi diller; panelden aç/kapa. Opsiyonel DeepL anahtarıyla otomatik çeviri akışı.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🛡️</div>
+          <h4>Yetki & Güvenlik</h4>
+          <p>Rol bazlı erişim, CSRF koruması, kritik ayarların korunması ve audit log ile izlenebilirlik.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section soft" id="modules">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Modüller</div>
+        <h2 class="h2">İhtiyacın Kadar Aç, İhtiyacın Kadar Kullan.</h2>
+        <p class="sub">
+          Modüler yapı; sistemi paketlere ayırır. Böylece hem basit kurulumlar hem de kurumsal geliştirmeler aynı çekirdek üzerinde ilerler.
+        </p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="icon">🩺</div>
+          <h4>Randevu & Klinik Akış</h4>
+          <p>
+            • Randevu yönetimi<br/>
+            • Şube / hekim / branş planlama<br/>
+            • Hasta kayıt / profil<br/>
+            • İsteğe bağlı bildirim (SMS/WhatsApp) altyapısı
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="icon">💳</div>
+          <h4>Ödeme & Abonelik (Opsiyon)</h4>
+          <p>
+            • Stripe / iyzico / PayTR sağlayıcı seçimi<br/>
+            • Abonelik paketleri (aylık/3-6-12) (ops.)<br/>
+            • Webhook + ödeme doğrulama (ops.)
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="icon">📦</div>
+          <h4>Stok & Envanter (Opsiyon)</h4>
+          <p>
+            • Sarf / ürün stok takibi<br/>
+            • Depo / şube bazlı hareketler<br/>
+            • Raporlama ve uyarılar
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🔌</div>
+          <h4>Entegrasyonlar</h4>
+          <p>
+            • Harita / yol tarifi<br/>
+            • E-posta bildirimleri<br/>
+            • e‑Nabız (ops.)<br/>
+            • Kurumsal ihtiyaçlara göre özel API entegrasyonları
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Fiyat</div>
+        <h2 class="h2">Satın Alma & Kurulum</h2>
+        <p class="sub">
+          Kaynak kod, satın alan kişiye teslim edilir. İstersen kurulumu da ben yapabilirim.
+        </p>
+      </div>
+
+      <div class="pricing">
+        <div class="price featured">
+          <div class="name">Paket</div>
+          <div class="title">Randevio (Kaynak Kod + Teslim)</div>
+
+          <div class="money-row">
+            <div class="money">3.500₺</div>
+            <div class="was">6.000₺</div>
+            <div class="tag">KAMPANYA</div>
+            <div class="tag2">📦 KOD TESLİM</div>
+          </div>
+
+          <ul class="list">
+            <li><span class="tick">✓</span> Tam kaynak kod teslimi</li>
+            <li><span class="tick">✓</span> Kurulum dokümantasyonu + temel yönergeler</li>
+            <li><span class="tick">✓</span> Demo içerikleri ve örnek yapılandırmalar</li>
+            <li><span class="tick">✓</span> İhtiyaca göre özelleştirme opsiyonları</li>
+          </ul>
+
+          <div class="warn">
+            🔧 <strong>Kurulum hizmeti opsiyoneldir:</strong> +600₺<br/>
+            (Sunucuya kurulum, DB import, temel ayarlar, yayına alma kontrolü.)
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn-primary" href="https://wa.me/12513160268" target="_blank" rel="noopener">WhatsApp'tan Yaz</a>
+            <a class="btn btn-ghost" href="https://t.me/mebularts" target="_blank" rel="noopener">Telegram</a>
+          </div>
+
+          <p class="note">İhtiyaca göre: tema/renk/logo, ekstra modül, özel entegrasyon ve geliştirme istekleri ayrıca planlanır.</p>
+        </div>
+
+        <div class="price">
+          <div class="name">Süreç</div>
+          <div class="title">Teslimat & Kurulum</div>
+          <p style="margin:12px 0 0; color:var(--muted); font-weight:700; line-height:1.75;">
+            Satın alım sonrası paket; (tam kaynak kod + kurulum dokümantasyonu + veritabanı şeması/örnek içerikler) şeklinde teslim edilir.
+            İstersen kurulum (+600₺) tarafını ben üstlenirim.
+          </p>
+
+          <ul class="list">
+            <li><span class="tick">✓</span> Tam kaynak kod + dokümantasyon</li>
+            <li><span class="tick">✓</span> Veritabanı şeması + örnek içerikler</li>
+            <li><span class="tick">✓</span> Temel yapılandırma yönergeleri</li>
+            <li><span class="tick">✓</span> Opsiyonel kurulum (+600₺)</li>
+          </ul>
+
+          <div class="mono">Demo: https://randevio.mebularts.com.tr/
+Admin: https://randevio.mebularts.com.tr/login.php
+admin@admin.com | 123456
+
+WhatsApp: https://wa.me/12513160268
+Telegram: https://t.me/mebularts</div>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="banner">
+        <div class="banner-inner">
+          <h3>🚀 Demoyu İncele, Sonra Karar Ver.</h3>
+          <p>
+            Canlı demoya gir, admin paneli test et. Satın alım sonrası kaynak kod + dokümantasyon teslimi yapılır.
+            İstersen kurulum (+600₺) tarafını da ben üstlenirim.
+          </p>
+          <div class="banner-actions">
+            <a class="btn btn-primary" href="https://randevio.mebularts.com.tr/" target="_blank" rel="noopener">Canlı Demo</a>
+            <a class="btn btn-ghost" href="https://randevio.mebularts.com.tr/login.php" target="_blank" rel="noopener" style="color:#fff; border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.06);">Admin</a>
+            <a class="btn btn-ghost" href="#pricing" style="color:#fff; border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.06);">Fiyat</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section soft" id="faq">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">SSS</div>
+        <h2 class="h2">Sık Sorulan Sorular</h2>
+        <p class="sub"> sayfalarında SSS bölümü güven verir: kısa, net ve tartışmasız.</p>
+      </div>
+
+      <div class="faq">
+        <details open>
+          <summary>📦 Satın aldıktan sonra neler teslim ediliyor?</summary>
+          <p><strong>Tam kaynak kod</strong>, kurulum dokümantasyonu, veritabanı şeması/örnek içerikler ve temel yapılandırma yönergeleri teslim edilir. İstersen kurulum (+600₺) opsiyonunu da seçebilirsin.</p>
+        </details>
+
+        <details>
+          <summary>🔧 Kurulum hizmeti var mı?</summary>
+          <p>Evet, opsiyonel. <strong>+600₺</strong> karşılığında sunucuya kurulum, DB import, temel ayarlar ve yayına alma kontrolü yapılır.</p>
+        </details>
+
+        <details>
+          <summary>🔐 Demo admin şifresi herkese açık mı?</summary>
+          <p>Evet, demo inceleme amaçlı. Üretim ortamında mutlaka şifreyi değiştirin ve yetkileri sınırlandırın. Demo ortamına gerçek kişisel veri girmeyin.</p>
+        </details>
+
+        <details>
+          <summary>💳 Stripe/iyzico/PayTR entegrasyonu zorunlu mu?</summary>
+          <p>Hayır. Ödeme/abonelik alanı opsiyonel modül mantığıyla ele alınabilir. İhtiyaç varsa eklenir.</p>
+        </details>
+
+        <details>
+          <summary>🧩 Özelleştirme yapılır mı?</summary>
+          <p>Evet. Tema/renk/logo, yeni modüller, özel raporlar, özel iş akışları ve entegrasyonlar için geliştirme yapılabilir.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">İletişim</div>
+        <h2 class="h2">Teklif / Kurulum / Özelleştirme</h2>
+        <p class="sub">
+          Hızlı iletişim kanallarım:
+        </p>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">💬</div>
+          <h4>WhatsApp</h4>
+          <p><strong>wa.me/12513160268</strong><br/>Kurulum/teklif için yazabilirsiniz.</p>
+          <div style="margin-top:14px;">
+            <a class="btn btn-primary" href="https://wa.me/12513160268" target="_blank" rel="noopener" style="width:100%;">WhatsApp</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">📨</div>
+          <h4>Telegram</h4>
+          <p><strong>t.me/mebularts</strong><br/>Sorular / destek.</p>
+          <div style="margin-top:14px;">
+            <a class="btn btn-ghost" href="https://t.me/mebularts" target="_blank" rel="noopener" style="width:100%;">Telegram</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">🧪</div>
+          <h4>Demo</h4>
+          <p><strong>randevio.mebularts.com.tr</strong><br/>Sistemi canlı inceleyin.</p>
+          <div style="margin-top:14px;">
+            <a class="btn btn-ghost" href="https://randevio.mebularts.com.tr/" target="_blank" rel="noopener" style="width:100%;">Canlı Demo</a>
+          </div>
+        </div>
+      </div>
+
+      
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="foot">
+        <div class="brand">
+          <div class="logo" style="width:36px;height:36px;border-radius:12px;">R</div>
+          <div style="font-weight:900;">Randevio</div>
+        </div>
+
+        <div class="foot-links">
+          <a href="#demo">Demo</a>
+          <a href="#pricing">Fiyat</a>
+          <a href="https://t.me/mebularts" target="_blank" rel="noopener">Telegram</a>
+          <a href="https://wa.me/12513160268" target="_blank" rel="noopener">WhatsApp</a>
+        </div>
+
+        <small>© 2026 Randevio — by mebularts</small>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
